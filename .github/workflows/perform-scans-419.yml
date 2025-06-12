@@ -1,4 +1,4 @@
-name: Static Testing Workflow
+name: Release 4.19 Static Testing Workflow
 
 on:
   schedule:
