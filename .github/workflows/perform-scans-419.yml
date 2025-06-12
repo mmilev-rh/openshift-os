@@ -28,14 +28,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y shellcheck
 
-    - name: Tests
-      run: |
-        shellcheck ./.prow.sh
-
     - name: Perform shellcheck
       run: |
         export IFS=$'\n'
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); shellcheck $fpath; done > /tmp/results.txt
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); printf "\n\n###################################################################################\n# ${fpath} \n###################################################################################\n\n"; shellcheck $fpath; done
 
     - name: Perform Prospector
       run: |
