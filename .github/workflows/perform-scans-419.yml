@@ -31,12 +31,12 @@ jobs:
     - name: Perform shellcheck
       run: |
         export IFS=$'\n'
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); printf "\n\n###################################################################################\n# ${fpath} \n###################################################################################\n\n"; shellcheck $fpath; done
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); printf "\n\n###################################################################################\n# ${fpath} \n###################################################################################\n\n"; shellcheck $fpath || true; done > /tmp/results.txt
 
     - name: Perform Prospector
       run: |
         export IFS=$'\n'
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "python"); do fpath=$(echo $itm | cut -d":" -f1); prospector --with-tool bandit $fpath; done >> /tmp/results.txt
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "python"); do fpath=$(echo $itm | cut -d":" -f1); printf "\n\n###################################################################################\n# ${fpath} \n###################################################################################\n\n"; prospector --with-tool bandit $fpath; done >> /tmp/results.txt
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
