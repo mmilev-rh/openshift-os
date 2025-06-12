@@ -28,16 +28,19 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y shellcheck
 
-    - name: Execute Bash Commands
+    - name: Perform shellcheck
       run: |
-        echo "Starting custom bash commands..."
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); shellcheck $fpath; done > results.txt
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "python"); do fpath=$(echo $itm | cut -d":" -f1); prospector --with-tool bandit $fpath; done >> results.txt
-        echo "Finished custom bash commands."
+        export IFS=$'\n'
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); shellcheck $fpath; done > /tmp/results.txt
+
+    - name: Perform Prospector
+      run: |
+        export IFS=$'\n'
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "python"); do fpath=$(echo $itm | cut -d":" -f1); prospector --with-tool bandit $fpath; done >> /tmp/results.txt
 
     - name: Upload Artifact
       uses: actions/upload-artifact@v4
       with:
         name: results
-        path: results.txt
+        path: /tmp/results.txt
         retention-days: 90
