@@ -28,6 +28,12 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y shellcheck
 
+    - name: Tests
+      run: |
+        pwd
+        ls -la
+        find .
+
     - name: Perform shellcheck
       run: |
         export IFS=$'\n'
