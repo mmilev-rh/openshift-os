@@ -1,0 +1,26 @@
+name: Merge upstream branches
+on:
+  schedule:
+    - cron:  '1 2 * * *'
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Merge upstream
+        run: |
+          git config --global user.name 'Mihail Milev'
+          git config --global user.email 'mmilev@redhat.com'
+          
+          git pull --unshallow
+
+          git remote add upstream https://github.com/openshift/os.git
+          git fetch upstream
+
+          git checkout -b release-4.19 origin/release-4.19
+          git merge --no-edit upstream/release-4.19
+          git push origin release-4.19
+
+          git checkout master
+          git merge --no-edit upstream/master
+          git push origin master
