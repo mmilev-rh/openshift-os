@@ -30,9 +30,7 @@ jobs:
 
     - name: Tests
       run: |
-        pwd
-        ls -la
-        find .
+        find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"
 
     - name: Perform shellcheck
       run: |
