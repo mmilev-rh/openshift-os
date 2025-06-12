@@ -30,8 +30,7 @@ jobs:
 
     - name: Tests
       run: |
-        export IFS=$'\n'
-        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); echo $fpath; done
+        shellcheck ./.prow.sh
 
     - name: Perform shellcheck
       run: |
