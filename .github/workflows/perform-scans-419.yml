@@ -1,0 +1,43 @@
+name: Static Testing Workflow
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  perform-scans:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        ref: release-4.19
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip3 install prospector[with_bandit]
+
+    - name: Install Shellcheck
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y shellcheck
+
+    - name: Execute Bash Commands
+      run: |
+        echo "Starting custom bash commands..."
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "shell script"); do fpath=$(echo $itm | cut -d":" -f1); shellcheck $fpath; done > results.txt
+        for itm in $(find . -type f -not -path "./.git/*" -exec file {} \; | grep -i exec | grep -i "python"); do fpath=$(echo $itm | cut -d":" -f1); prospector --with-tool bandit $fpath; done >> results.txt
+        echo "Finished custom bash commands."
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: results
+        path: results.txt
+        retention-days: 90
