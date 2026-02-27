@@ -22,6 +22,14 @@ jobs:
           git merge --no-edit upstream/release-4.19
           git push origin release-4.19
 
+          git checkout -b release-4.20 origin/release-4.20
+          git merge --no-edit upstream/release-4.20
+          git push origin release-4.20
+
+          git checkout -b release-4.21 origin/release-4.21
+          git merge --no-edit upstream/release-4.21
+          git push origin release-4.21
+
           git checkout master
           git merge --no-edit upstream/master
           git push origin master
