@@ -7,7 +7,8 @@ set -euo pipefail
 
 urls=(
     # theoretically that's the only one we need
-    "http://base-4-21-rhel96.ocp.svc.cluster.local"
+    "http://base-4-22-rhel98.ocp.svc.cluster.local"
+    "http://base-4-22-rhel102.ocp.svc.cluster.local"
 )
 
 dest=$1; shift
