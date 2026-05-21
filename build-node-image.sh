@@ -23,41 +23,20 @@ source /etc/os-release
 # XXX: For SCOS, only allow certain packages to come from ART; everything else
 # should come from CentOS. We should eventually sever this.
 if [ $ID = centos ]; then
-    # this says: "if the line starts with [.*], turn off printing. if the line starts with [our-repo], turn it on."
-    awk "/\[.*\]/{p=0} /\[rhel-10.2-server-ose-5.0\]/{p=1} p" /etc/yum.repos.d/*.repo > /etc/yum.repos.d/okd.repo.tmp
-    sed -i -e 's,\[rhel-10.2-server-ose-5.0\],\[rhel-10.2-server-ose-5.0-okd\],' /etc/yum.repos.d/okd.repo.tmp
-    echo 'includepkgs=openshift-*,ose-aws-ecr-*,ose-azure-acr-*,ose-gcp-gcr-*,ose-crio-* ' >> /etc/yum.repos.d/okd.repo.tmp
-    mv /etc/yum.repos.d/okd.repo{.tmp,}
+    OPENSHIFT_ART_REPO_NAME=${YUM_REPO_NAMES/*,/} # ART repo == the last repo in the list
+    dnf config-manager --save \
+        --setopt="${OPENSHIFT_ART_REPO_NAME}.includepkgs=openshift-*,ose-aws-ecr-*,ose-azure-acr-*,ose-gcp-gcr-*,ose-crio-*"
 fi
 
 # XXX: patch cri-o spec to use tmpfiles
 # https://github.com/CentOS/centos-bootc/issues/393
 mkdir -p /var/opt
 
-# Disable repos that don't match the current OS version to avoid 401 errors
-# when rpm-ostree tries to access all repos. This replicates the conditional-include
-# logic that was previously in packages-openshift.yaml.
-if [ "$ID" = "rhel" ]; then
-    if [ "$VERSION_ID" = "9.8" ]; then
-        # Disable rhel-10.2 and centos repos for rhel-9.8 builds
-        for repo in /etc/yum.repos.d/{ocp,git}.repo; do
-            [ -f "$repo" ] && sed -i -E '/^\[(rhel-10\.2|c10s)/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
-        done
-    elif [ "$VERSION_ID" = "10.2" ]; then
-        # Disable rhel-9 and centos repos for rhel-10.2 builds
-        for repo in /etc/yum.repos.d/{ocp,git}.repo; do
-            [ -f "$repo" ] && sed -i -E '/^\[(rhel-9|c10s)/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
-        done
-    fi
-elif [ "$ID" = "centos" ] && [ "$VERSION_ID" = "10" ]; then
-    # Disable rhel repos for centos-10 builds
-    for repo in /etc/yum.repos.d/{ocp,git}.repo; do
-        [ -f "$repo" ] && sed -i -E '/^\[rhel-/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
-    done
-fi
+# Version lock to the specific packages installed on the system already
+dnf --disablerepo=* versionlock add '*'
 
-# Install the OCP packages. Repos have been configured above.
-rpm-ostree install \
+# Install the OCP packages. Limit to appropriate repos for this stream.
+dnf --repo="${YUM_REPO_NAMES}" install -y \
     cri-o cri-tools conmon-rs \
     openshift-clients openshift-kubelet \
     openvswitch3.5 \
@@ -66,6 +45,14 @@ rpm-ostree install \
     ose-azure-acr-image-credential-provider \
     ose-gcp-gcr-image-credential-provider \
     ose-crio-credential-provider
+
+# clear the versionlock and clean up any dnf caches / yum repo files we created.
+# note `redhat.repo` gets created when you run dnf (via subscription-manager plugin),
+# so we'll clean that up too.
+dnf --disablerepo=* versionlock clear
+dnf clean all
+rm -vf /etc/yum.repos.d/{ocp,git,redhat}.repo
+
 
 # --- postprocess steps ---
 # These were previously in the `postprocess` section of packages-openshift.yaml.
@@ -148,9 +135,6 @@ EOF
 fi
 
 # --- end postprocess steps ---
-
-# cleanup any repo files we injected
-rm -f /etc/yum.repos.d/{ocp,git,okd}.repo
 
 find /usr -name '*.pyc.bak' -exec sh -c 'mv $1 ${1%.bak}' _ {} \;
 ostree container commit
