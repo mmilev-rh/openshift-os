@@ -104,8 +104,8 @@ EOF
 
 # Generate MOTD
 # Detect variant based on the Containerfile metadata. In the absence of
-# rpm-ostree treefile metadata, we use a heuristic: centos-10 builds are SCOS.
-if [ "$ID" = "centos" ] && [ "$VERSION_ID" = "10" ]; then
+# rpm-ostree treefile metadata, we use a heuristic: centos builds are SCOS.
+if [ "$ID" = "centos" ]; then
     colloquial_name=SCOS
     project_name=OKD
 else
