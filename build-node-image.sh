@@ -99,11 +99,10 @@ ln -sr /usr/bin/conmon /usr/libexec/crio/conmon
 
 # Inject OpenShift-specific release fields
 cat >> /usr/lib/os-release <<EOF
-OPENSHIFT_VERSION="5.0"
+OPENSHIFT_VERSION="${OPENSHIFT_VERSION}"
 EOF
 
 # Generate MOTD
-. /etc/os-release
 # Detect variant based on the Containerfile metadata. In the absence of
 # rpm-ostree treefile metadata, we use a heuristic: centos-10 builds are SCOS.
 if [ "$ID" = "centos" ] && [ "$VERSION_ID" = "10" ]; then
