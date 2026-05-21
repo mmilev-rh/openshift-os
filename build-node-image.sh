@@ -14,7 +14,8 @@ if [ "${OPENSHIFT_CI}" != 0 ]; then
     /run/src/ci/get-ocp-repo.sh /etc/yum.repos.d/ocp.repo
 fi
 
-# add all the repos from the src repo into `/etc/yum.repos.d` so dnf sees them
+# add all the repos from the src repo (including mounted in secret.repo)
+# into `/etc/yum.repos.d` so dnf sees them
 cat /run/src/*.repo >> /etc/yum.repos.d/git.repo
 
 source /etc/os-release
@@ -39,18 +40,18 @@ mkdir -p /var/opt
 if [ "$ID" = "rhel" ]; then
     if [ "$VERSION_ID" = "9.8" ]; then
         # Disable rhel-10.2 and centos repos for rhel-9.8 builds
-        for repo in /etc/yum.repos.d/{ocp,git,secret}.repo; do
+        for repo in /etc/yum.repos.d/{ocp,git}.repo; do
             [ -f "$repo" ] && sed -i -E '/^\[(rhel-10\.2|c10s)/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
         done
     elif [ "$VERSION_ID" = "10.2" ]; then
         # Disable rhel-9 and centos repos for rhel-10.2 builds
-        for repo in /etc/yum.repos.d/{ocp,git,secret}.repo; do
+        for repo in /etc/yum.repos.d/{ocp,git}.repo; do
             [ -f "$repo" ] && sed -i -E '/^\[(rhel-9|c10s)/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
         done
     fi
 elif [ "$ID" = "centos" ] && [ "$VERSION_ID" = "10" ]; then
     # Disable rhel repos for centos-10 builds
-    for repo in /etc/yum.repos.d/{ocp,git,secret}.repo; do
+    for repo in /etc/yum.repos.d/{ocp,git}.repo; do
         [ -f "$repo" ] && sed -i -E '/^\[rhel-/,/^$/s/^enabled=1$/enabled=0/g' "$repo"
     done
 fi
@@ -72,12 +73,8 @@ rpm-ostree install \
 # Disable any built-in repos. We need to work in disconnected environments by
 # default, and default-enabled repos will be attempted to be fetched by
 # rpm-ostree when doing node-local kernel overrides today for e.g. kernel-rt.
-mkdir -p /etc/yum.repos.d
 for x in $(find /etc/yum.repos.d/ -name '*.repo'); do
-    # ignore repo files that are mountpoints since they're likely secrets
-    if ! mountpoint "$x"; then
-        sed -i -e 's/enabled\s*=\s*1/enabled=0/g' "$x"
-    fi
+    sed -i -e 's/enabled\s*=\s*1/enabled=0/g' "$x"
 done
 
 # Enable librhsm which enables host subscriptions to work in containers
