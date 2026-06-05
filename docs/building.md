@@ -25,7 +25,7 @@ to be able to pull the base images or a locally built base
 SCOS or RHCOS image (see building instructions in
 [that repo](https://github.com/coreos/rhel-coreos-config)).
 
-## Building
+## Building Node Image
 
 Each variant has a `build-args-*.conf` file that specifies the base image
 and metadata for that build. Choose the appropriate one for your target:
@@ -37,19 +37,31 @@ and metadata for that build. Choose the appropriate one for your target:
 To build:
 
 ```
-podman build . --build-arg-file build-args-c10s-5.0.conf \
+podman build --build-arg-file build-args-c10s-5.0.conf \
   --secret id=yumrepos,src=/path/to/all.repo \
   -v /etc/pki/ca-trust:/etc/pki/ca-trust:ro \
-  --security-opt label=disable -t localhost/stream-coreos:5.0
+  --security-opt label=disable -t localhost/stream-coreos:5.0 .
 ```
 
 To override the base image (e.g. to use a locally built OCI archive),
 pass `--from`:
 
 ```
-podman build . --build-arg-file build-args-c10s-5.0.conf \
+podman build --build-arg-file build-args-c10s-5.0.conf \
   --from oci-archive:$(ls builds/latest/x86_64/*.ociarchive) \
   --secret id=yumrepos,src=/path/to/all.repo \
   -v /etc/pki/ca-trust:/etc/pki/ca-trust:ro \
-  --security-opt label=disable -t localhost/stream-coreos:5.0
+  --security-opt label=disable -t localhost/stream-coreos:5.0 .
+```
+
+## Building Extensions Image
+
+Similar to the above, but use the extensions Containerfile instead:
+
+```
+podman build --build-arg-file build-args-c10s-5.0.conf \
+  --secret id=yumrepos,src=/path/to/all.repo \
+  -v /etc/pki/ca-trust:/etc/pki/ca-trust:ro \
+  --security-opt label=disable -t localhost/stream-coreos-extensions:5.0 \
+  -f extensions/Containerfile .
 ```
