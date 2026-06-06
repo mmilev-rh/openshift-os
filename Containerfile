@@ -24,13 +24,9 @@ COPY --from=metadata /usr/share/openshift /usr/share/openshift
 ARG IMAGE_NAME
 ARG IMAGE_CPE
 ARG TARGETARCH
+ARG STREAM_CLASS
 LABEL name=${IMAGE_NAME}
 LABEL cpe=${IMAGE_CPE}
 LABEL architecture=${TARGETARCH}
 LABEL io.openshift.metalayer=true
-# Add a hack to get OpenShift tests working again because a
-# revert of the new architecture happened in
-# https://github.com/openshift/machine-config-operator/pull/5703
-# because we can't add labels to the rhel-10.2 yet:
-# https://github.com/coreos/rhel-coreos-config/blob/1ba124d37b93a095bb5ec2ef5b421965b982b255/build-args-rhel-10.2.conf#L15-L18
-LABEL ostree.linux=true
+LABEL io.openshift.os.streamclass=${STREAM_CLASS}
