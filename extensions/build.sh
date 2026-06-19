@@ -6,16 +6,104 @@ if [ "${OPENSHIFT_CI}" != 0 ]; then
     ci/get-ocp-repo.sh ocp.repo
 fi
 
-# just to parse the treefile, rpm-ostree still wants to read referenced "externals" (e.g. passwd, group)
-# hack around this for now by deleting the problematic bits; we should tweak rpm-ostree instead
-jq 'del(.["check-passwd","check-groups"])' /usr/share/rpm-ostree/treefile.json > filtered.json
-
+# add all the repos from the src dir (including mounted secret.repo)
+# into /etc/yum.repos.d so dnf sees them
+cat /os/*.repo >> /etc/yum.repos.d/git.repo
 
 . /etc/os-release
+arch=$(uname -m)
+destdir=/usr/share/rpm-ostree/extensions/
+mkdir -p "${destdir}"
+
+# Determine which extensions YAML file to use based on OS
 extensions_yaml="extensions/${ID}-${VERSION_ID}.yaml"
-# Replace the __OCP_VERSION__ placeholder with the actual OpenShift version.
-# This allows the same YAML file to be used across different OCP versions
-# (e.g. 4.23 and 5.0) without duplication.
-sed -i "s/__OCP_VERSION__/${OPENSHIFT_VERSION}/g" "$extensions_yaml"
-rpm-ostree compose extensions filtered.json "$extensions_yaml" \
-    --rootfs=/ --output-dir=/usr/share/rpm-ostree/extensions/
+
+# Check if the extensions YAML file exists
+if [ ! -f "$extensions_yaml" ]; then
+    echo "Error: Extensions file not found: $extensions_yaml"
+    exit 1
+fi
+
+# Convert YAML to JSON using Python (yq is not available in base image)
+# We preserve comments in YAML but convert to JSON for jq processing
+extensions_json=$(mktemp)
+python3 -c 'import sys, yaml, json; y=yaml.safe_load(sys.stdin.read()); print(json.dumps(y))' < "$extensions_yaml" > "$extensions_json"
+
+# Version lock to the specific packages installed on the system already
+dnf --disablerepo=* versionlock add '*'
+
+# Collect all packages and additional repos from all applicable extensions
+all_packages=()
+additional_repos=()
+
+# Loop through all extensions defined in the JSON file
+for extension in $(jq -r '.extensions | keys[]' "$extensions_json"); do
+    echo "Processing extension: ${extension}"
+
+    # Check architecture constraints
+    architectures=$(jq -r ".extensions[\"${extension}\"].architectures[]? // empty" "$extensions_json")
+    if [ -n "$architectures" ]; then
+        # Extension has architecture constraints - check if current arch matches
+        arch_match=false
+        for ext_arch in $architectures; do
+            if [ "$arch" = "$ext_arch" ]; then
+                arch_match=true
+                break
+            fi
+        done
+        if [ "$arch_match" = false ]; then
+            echo "Skipping ${extension} (not for ${arch})"
+            continue
+        fi
+    fi
+
+    # Get packages for this extension from JSON
+    packages=$(jq -r ".extensions[\"${extension}\"].packages[]" "$extensions_json")
+
+    # Error if no packages defined for this extension
+    if [ -z "$packages" ]; then
+        echo "Error: No packages defined for extension: ${extension}"
+        exit 1
+    fi
+
+    # Check if this extension has additional repos
+    ext_repos=$(jq -r ".extensions[\"${extension}\"].repos[]? // empty" "$extensions_json")
+    if [ -n "$ext_repos" ]; then
+        echo "  Extension has additional repos: ${ext_repos}"
+        # Add extension-specific repos to the collection
+        additional_repos+=($ext_repos)
+    fi
+
+    # Add packages to the collection
+    echo "  Including packages: ${packages}"
+    all_packages+=($packages)
+done
+
+# Error if no packages to download at all
+if [ ${#all_packages[@]} -eq 0 ]; then
+    echo "Error: No packages to download for any extension"
+    exit 1
+fi
+
+# Combine global repos with any extension-specific repos
+repo_list="${EXTENSIONS_YUM_REPO_NAMES}"
+if [ ${#additional_repos[@]} -gt 0 ]; then
+    # Remove duplicates and add to repo list
+    unique_additional=$(printf '%s\n' "${additional_repos[@]}" | sort -u | tr '\n' ',' | sed 's/,$//')
+    repo_list="${repo_list},${unique_additional}"
+    echo "Including additional repos: ${unique_additional}"
+fi
+
+# Download all packages in a single dnf call for efficiency
+echo "Downloading all extension packages (${#all_packages[@]} packages)..."
+dnf --repo="${repo_list}" download --resolve \
+    --arch="${arch}" --arch=noarch --destdir="${destdir}" \
+    "${all_packages[@]}"
+
+# Clear the versionlock and clean up dnf caches / yum repo files we created
+dnf --disablerepo=* versionlock clear
+dnf clean all
+rm -vf /etc/yum.repos.d/{ocp,git,redhat}.repo
+
+# Clean up temporary JSON file
+rm -f "$extensions_json"

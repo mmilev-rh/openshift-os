@@ -2,24 +2,6 @@
 # https://github.com/openshift/enhancements/blob/master/enhancements/rhcos/extensions.md
 # and https://github.com/coreos/fedora-coreos-tracker/issues/401
 
-# RULE: If repos support all architectures then put them in the global repos list
-# at the top of this file (directly below this comment). If we don't we can have
-# consistency issues across arches. See e.g. https://issues.redhat.com/browse/OCPBUGS-52293.
-
-repos:
-  # Generically used for various extensions.
-  # Repo placed here to respect the rule above.
-  - rhel-9.8-appstream
-  # For kata-containers (sandboxed-containers).
-  # Repo placed here to respect the rule above.
-  - rhel-9.8-server-ose-__OCP_VERSION__
-  # For two-node-ha extension.
-  # Repo placed here to respect the rule above.
-  - rhel-9.8-highavailability
-  # For ipsec extension include the fast-datapath repo.
-  # Repo placed here to respect the rule above.
-  - rhel-9.8-fast-datapath
-
 extensions:
   # https://github.com/coreos/fedora-coreos-tracker/issues/1504
   ipsec:
@@ -48,7 +30,6 @@ extensions:
   # These are already in the base, so they're not OS extensions, but they're
   # useful to have in RPM form to install in kmod build containers.
   kernel:
-    kind: development
     packages:
       - kernel
       - kernel-core

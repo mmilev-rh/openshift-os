@@ -2,20 +2,6 @@
 # https://github.com/openshift/enhancements/blob/master/enhancements/rhcos/extensions.md
 # and https://github.com/coreos/fedora-coreos-tracker/issues/401
 
-# RULE: If repos support all architectures then put them in the global repos list
-# at the top of this file (directly below this comment). If we don't we can have
-# consistency issues across arches. See e.g. https://issues.redhat.com/browse/OCPBUGS-52293.
-
-repos:
-  - c10s-sig-nfv
-  # Some of the extensions here have version bindings to host packages. Add the
-  # mirrors since those retain multiple versions of packages in case the latest
-  # compose has already moved since the last base image build.
-  - c10s-baseos-mirror
-  - c10s-appstream-mirror
-  - c10s-nfv-mirror
-  - c10s-rt-mirror
-
 extensions:
   ipsec:
     packages:
@@ -43,7 +29,6 @@ extensions:
   # These are already in the base, so they're not OS extensions, but they're
   # useful to have in RPM form to install in kmod build containers.
   kernel:
-    kind: development
     packages:
       - kernel
       - kernel-core
