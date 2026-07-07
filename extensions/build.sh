@@ -94,11 +94,29 @@ if [ ${#additional_repos[@]} -gt 0 ]; then
     echo "Including additional repos: ${unique_additional}"
 fi
 
-# Download all packages in a single dnf call for efficiency
+# Download all packages.
 echo "Downloading all extension packages (${#all_packages[@]} packages)..."
-dnf --repo="${repo_list}" download --resolve \
-    --arch="${arch}" --arch=noarch --destdir="${destdir}" \
-    "${all_packages[@]}"
+# `dnf download` for dnf4 doesn't seem to respect versionlock so we'll
+# use `dnf install` with the `--downloadonly` flag here. `dnf install`
+# won't re-download packages that are already installed in the system
+# so we have to add a second `dnf reinstall` to get the kernel
+# package RPM files that we also want in our extensions.
+#
+# So `dnf download` becomes `dnf install && dnf reinstall`. The
+# install downloads packages that aren't already installed and the
+# reinstall downloads packages that are already installed. This is
+# likely not a limitiation of dnf5 `dnf download`.
+#
+# Leverage --nobest so older versions of packages can be used when
+# versionlocking would require that.
+for subcommand in 'install' 'reinstall'; do
+    dnf --repo="${repo_list}" "${subcommand}" \
+        --assumeyes                           \
+        --nobest                              \
+        --downloadonly                        \
+        --destdir="${destdir}"                \
+        "${all_packages[@]}"
+done
 
 # Clear the versionlock and clean up dnf caches / yum repo files we created
 dnf --disablerepo=* versionlock clear
