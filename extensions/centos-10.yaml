@@ -40,9 +40,6 @@ extensions:
   kernel-rt:
     architectures:
       - x86_64
-    repos:
-      # this is not available on all arches, so keep here and not in the global repo list
-      - c10s-nfv
     packages:
       - kernel-rt-core
       - kernel-rt-modules

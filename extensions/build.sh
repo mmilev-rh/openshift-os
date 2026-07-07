@@ -46,7 +46,6 @@ echo "kernel-devel-${kernel_evr}.*" >> /etc/dnf/plugins/versionlock.list
 
 # Collect all packages and additional repos from all applicable extensions
 all_packages=()
-additional_repos=()
 
 # Loop through all extensions defined in the JSON file
 for extension in $(jq -r '.extensions | keys[]' "$extensions_json"); do
@@ -78,14 +77,6 @@ for extension in $(jq -r '.extensions | keys[]' "$extensions_json"); do
         exit 1
     fi
 
-    # Check if this extension has additional repos
-    ext_repos=$(jq -r ".extensions[\"${extension}\"].repos[]? // empty" "$extensions_json")
-    if [ -n "$ext_repos" ]; then
-        echo "  Extension has additional repos: ${ext_repos}"
-        # Add extension-specific repos to the collection
-        additional_repos+=($ext_repos)
-    fi
-
     # Add packages to the collection
     echo "  Including packages: ${packages}"
     all_packages+=($packages)
@@ -98,13 +89,7 @@ if [ ${#all_packages[@]} -eq 0 ]; then
 fi
 
 # Combine global repos with any extension-specific repos
-repo_list="${EXTENSIONS_YUM_REPO_NAMES}"
-if [ ${#additional_repos[@]} -gt 0 ]; then
-    # Remove duplicates and add to repo list
-    unique_additional=$(printf '%s\n' "${additional_repos[@]}" | sort -u | tr '\n' ',' | sed 's/,$//')
-    repo_list="${repo_list},${unique_additional}"
-    echo "Including additional repos: ${unique_additional}"
-fi
+repo_list="${YUM_REPO_NAMES},${EXTENSIONS_YUM_REPO_NAMES}"
 
 # Download all packages.
 echo "Downloading all extension packages (${#all_packages[@]} packages)..."
@@ -121,11 +106,15 @@ echo "Downloading all extension packages (${#all_packages[@]} packages)..."
 #
 # Leverage --nobest so older versions of packages can be used when
 # versionlocking would require that.
+#
+# Leverage skip_if_unavailable=True for cases where repos exist for
+# only specific architectures.
 for subcommand in 'install' 'reinstall'; do
     dnf --repo="${repo_list}" "${subcommand}" \
         --assumeyes                           \
         --nobest                              \
         --downloadonly                        \
+        --setopt=skip_if_unavailable=True     \
         --destdir="${destdir}"                \
         "${all_packages[@]}"
 done
