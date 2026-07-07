@@ -25,7 +25,6 @@ extensions:
     packages:
       - kernel-devel
       - kernel-headers
-    match-base-evr: kernel
   # These are already in the base, so they're not OS extensions, but they're
   # useful to have in RPM form to install in kmod build containers.
   kernel:
@@ -35,7 +34,6 @@ extensions:
       - kernel-modules
       - kernel-modules-core
       - kernel-modules-extra
-    match-base-evr: kernel
   # GRPA-2822
   # https://github.com/openshift/machine-config-operator/pull/1330
   # https://github.com/openshift/enhancements/blob/master/enhancements/support-for-realtime-kernel.md
@@ -51,7 +49,6 @@ extensions:
       - kernel-rt-modules-core
       - kernel-rt-modules-extra
       - kernel-rt-devel
-    match-base-evr: kernel
 ### XXX: Drop kata until it can be in all the repos it needs to be in
 ### for us to compose extensions.
 ###

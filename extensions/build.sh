@@ -32,6 +32,18 @@ python3 -c 'import sys, yaml, json; y=yaml.safe_load(sys.stdin.read()); print(js
 # Version lock to the specific packages installed on the system already
 dnf --disablerepo=* versionlock add '*'
 
+# Also versionlock kernel-{devel,headers} and *any* potential kernel package that gets
+# installed (kernel-rt, kernel-64k, etc) to the same EVR as the kernel that's already
+# installed in the system.
+kernel_evr=$(rpm -q kernel-core --queryformat \
+             "%|%EPOCH?{%{EPOCH}}:{0}|:%{VERSION}-%{RELEASE}")
+for kernel_variant in 'rt' '64k'; do
+    echo "kernel-${kernel_variant}-core-${kernel_evr}.*" >> /etc/dnf/plugins/versionlock.list
+    echo "kernel-${kernel_variant}-devel-${kernel_evr}.*" >> /etc/dnf/plugins/versionlock.list
+done
+echo "kernel-headers-${kernel_evr}.*" >> /etc/dnf/plugins/versionlock.list
+echo "kernel-devel-${kernel_evr}.*" >> /etc/dnf/plugins/versionlock.list
+
 # Collect all packages and additional repos from all applicable extensions
 all_packages=()
 additional_repos=()
