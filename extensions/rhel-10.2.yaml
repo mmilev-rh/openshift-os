@@ -33,6 +33,7 @@ extensions:
       - kernel
       - kernel-core
       - kernel-modules
+      - kernel-modules-core
       - kernel-modules-extra
     match-base-evr: kernel
   # GRPA-2822
@@ -47,6 +48,7 @@ extensions:
     packages:
       - kernel-rt-core
       - kernel-rt-modules
+      - kernel-rt-modules-core
       - kernel-rt-modules-extra
       - kernel-rt-devel
     match-base-evr: kernel
@@ -71,6 +73,7 @@ extensions:
       - kernel-64k-modules
       - kernel-64k-modules-core
       - kernel-64k-modules-extra
+      - kernel-64k-devel
   # https://issues.redhat.com/browse/COS-2940
   sysstat:
     packages:

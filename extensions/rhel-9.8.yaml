@@ -34,6 +34,7 @@ extensions:
       - kernel
       - kernel-core
       - kernel-modules
+      - kernel-modules-core
       - kernel-modules-extra
     match-base-evr: kernel
   # GRPA-2822
@@ -48,6 +49,7 @@ extensions:
     packages:
       - kernel-rt-core
       - kernel-rt-modules
+      - kernel-rt-modules-core
       - kernel-rt-modules-extra
       - kernel-rt-devel
     match-base-evr: kernel
