@@ -40,7 +40,6 @@ dnf --repo="${YUM_REPO_NAMES}" install -y \
     cri-o cri-tools conmon-rs \
     openshift-clients openshift-kubelet \
     openvswitch3.5 \
-    NetworkManager-ovs \
     ose-aws-ecr-image-credential-provider \
     ose-azure-acr-image-credential-provider \
     ose-gcp-gcr-image-credential-provider \
