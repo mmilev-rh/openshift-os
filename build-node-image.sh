@@ -36,7 +36,10 @@ mkdir -p /var/opt
 dnf --disablerepo=* versionlock add '*'
 
 # Install the OCP packages. Limit to appropriate repos for this stream.
-dnf --repo="${YUM_REPO_NAMES}" install -y \
+#
+# Leverage --nobest so older versions of packages can be used when
+# versionlocking would require that.
+dnf --repo="${YUM_REPO_NAMES}" install --nobest -y \
     cri-o cri-tools conmon-rs \
     openshift-clients openshift-kubelet \
     openvswitch3.5 \
